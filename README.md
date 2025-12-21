@@ -1,59 +1,144 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Attendance_Management（勤怠管理アプリ）
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel + Laravel Sail（Docker）で動作する勤怠管理アプリです。  
+ローカル環境では MySQL / Redis / Mailpit を起動し、認証は Laravel Fortify（メール認証あり）を使用します。
 
-## About Laravel
+-   Repository: https://github.com/takuya0521/Attendance_Management
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 環境構築
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+-   Docker（Sail）でコンテナ起動 → アプリキー生成 → マイグレーションまで実行します
+-   MySQL のホスト側ポートは 3306 競合回避のため **3307** を使用します（必要に応じて変更可能）
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 使用技術（実行環境）
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+-   Laravel 12.x
+-   PHP 8.5（Sail）
+-   MySQL 8.4（Sail）
+-   Redis（Sail）
+-   Mailpit（Sail）
+-   Laravel Fortify（会員登録 / ログイン / メール認証）
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## セットアップ手順（コピペ用）
 
-### Premium Partners
+> この手順は WSL / macOS / Linux のターミナルで実行する想定です。
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 1) リポジトリ取得
 
-## Contributing
+    git clone https://github.com/takuya0521/Attendance_Management.git
+    cd Attendance_Management
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 2) .env 作成
 
-## Code of Conduct
+    cp .env.example .env
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 3) MySQL ポート競合対策（3306 使用中の場合）
 
-## Security Vulnerabilities
+> PC 側で 3306 を使っている場合、ホスト公開ポートを 3307 に逃がします  
+> ※コンテナ内（Laravel → MySQL）は mysql:3306 のまま
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+    grep -q '^FORWARD_DB_PORT=' .env && \
+      sed -i 's/^FORWARD_DB_PORT=.*/FORWARD_DB_PORT=3307/' .env || \
+      echo 'FORWARD_DB_PORT=3307' >> .env
 
-## License
+### 4) コンテナ起動（Docker/Sail）
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+    chmod +x vendor/bin/sail
+    ./vendor/bin/sail up -d
+
+### 5) アプリキー作成
+
+    ./vendor/bin/sail artisan key:generate
+
+### 6) マイグレーション
+
+    ./vendor/bin/sail artisan migrate
+
+### 7) 動作確認
+
+    ./vendor/bin/sail ps
+    ./vendor/bin/sail artisan tinker --execute="DB::connection()->getPdo(); echo 'DB OK';"
+    curl -I http://localhost | head
+
+---
+
+## Fortify（認証）
+
+-   会員登録 / ログイン / メール認証（Email Verification）を提供します
+-   メールは Mailpit で確認します
+
+### 動作確認手順
+
+1. http://localhost/register から会員登録
+2. Mailpit（http://localhost:8025）で認証メールを確認
+3. 認証リンクをクリック
+4. http://localhost/login からログイン
+
+---
+
+## ER 図
+
+-   作成した ER 図の画像を配置して貼り付けます（例：docs/er.png）
+
+![ER図](docs/er.png)
+
+---
+
+## URL
+
+-   開発環境（アプリ）：http://localhost
+-   Mailpit：http://localhost:8025
+
+---
+
+## よく使うコマンド
+
+### 起動
+
+    ./vendor/bin/sail up -d
+
+### 停止
+
+    ./vendor/bin/sail down
+
+### DB 初期化（ボリューム削除して作り直し）
+
+    ./vendor/bin/sail down -v --remove-orphans
+    ./vendor/bin/sail up -d
+    ./vendor/bin/sail artisan migrate
+
+### キャッシュ削除（設定反映がうまくいかないとき）
+
+    ./vendor/bin/sail artisan optimize:clear
+
+---
+
+## トラブルシューティング
+
+### MySQL が 3306 で起動できない
+
+-   エラー例：ports are not available ... 0.0.0.0:3306
+-   対処：.env に FORWARD_DB_PORT=3307 を設定し、コンテナを作り直す
+
+    echo 'FORWARD_DB_PORT=3307' >> .env
+    ./vendor/bin/sail down -v --remove-orphans
+    ./vendor/bin/sail up -d
+
+### localhost が開けない（80 番が競合する）
+
+-   対処：.env に APP_PORT=8080 を設定して再起動
+
+    grep -q '^APP_PORT=' .env && \
+     sed -i 's/^APP_PORT=.\*/APP_PORT=8080/' .env || \
+     echo 'APP_PORT=8080' >> .env
+
+    ./vendor/bin/sail down
+    ./vendor/bin/sail up -d
+
+-   アクセス：http://localhost
