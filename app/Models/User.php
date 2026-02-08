@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'is_admin',
+        'email_verified_at',
     ];
 
     /**
@@ -44,5 +46,22 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'is_admin' => 'boolean',
+    ];
+
+    // 追加
+    public function attendances()
+    {
+        return $this->hasMany(\App\Models\Attendance::class);
+    }
+
+    // 追加
+    public function stampCorrectionRequests()
+    {
+        return $this->hasMany(\App\Models\StampCorrectionRequest::class);
     }
 }
